@@ -1,0 +1,24 @@
+# MetaGPT Configuration
+# Place this at ~/.metagpt/config2.yaml
+
+llm:
+  api_type: "openai"  # Using OpenAI-compatible API
+  base_url: "https://api.aiearth.dev/v1"  # NewAPI endpoint
+  api_key: "sk-zVG40dswfa37g68nEzWv9n6JT9gpXjLXe39pKWftKgbIfUct"
+  model: "gpt-4o-mini"  # Or whatever model NewAPI supports
+
+# Search API for Deep Research
+search:
+  api_type: "tavily"
+  api_key: "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"  # Tavily API key configured
+
+# Optional: Serpapi as backup
+# serpapi:
+#   api_key: "YOUR_SERPAPI_KEY"
+
+# Workspace
+workspace:
+  path: "/mnt/d/gitlab_deepwisdom/trendforge/workspace"
+
+# Log level
+log_level: "INFO"

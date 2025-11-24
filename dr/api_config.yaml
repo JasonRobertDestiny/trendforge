@@ -1,0 +1,30 @@
+openai:
+  api_base: https://newapi.deepwisdom.ai/v1
+  api_key: ...
+
+tavily:
+  api_key: ...
+  timeout: 200  # HTTP request timeout in seconds
+
+youcom:
+  api_key: ...
+  timeout: 200  # Search request timeout
+  content_timeout: 240  # Content fetching timeout (livecrawl can be slow)
+
+firecrawl:
+  api_key: ...
+  base_url: https://api.firecrawl.dev
+  timeout: 200  # Web crawling needs more time
+
+searchapi:
+  api_key: ...
+  timeout: 200
+
+serper:
+  api_key: ...
+  timeout: 200
+
+exa:
+  api_key: ...
+  base_url: https://api.exa.ai
+  timeout: 200

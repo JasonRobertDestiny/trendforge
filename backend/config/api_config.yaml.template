@@ -1,0 +1,4 @@
+# API 配置模板
+# 请复制为 api_config.yaml 并填写密钥
+newsapi_key: "YOUR_NEWSAPI_KEY"
+reddit_user_agent: "trendforge-bot/0.1"

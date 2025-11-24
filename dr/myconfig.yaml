@@ -1,0 +1,35 @@
+llm:
+  api_type: "openai"  # or azure / ollama / open_llm etc. Check LLMType for more options
+  model: "gemini-2.5-flash"  # claude-4-sonnet" #"gpt-4o-mini"#"gemini-2.5-flash-preview-04-17"#"deepseek-ai/DeepSeek-V3-0324" # #"gpt-4o"  # or gpt-3.5-turbo-1106 / gpt-4-1106-preview \ gemini-2.5-flash-preview-05-20
+  base_url: "https://newapi.deepwisdom.ai/v1"  # or forward url / other llm url
+  api_key: ...
+  max_token: 65000
+  timeout: 320
+  temperature: 1.1
+  stream: True
+
+# 搜索引擎配置：api_type 必须是 metagpt 支持的枚举之一
+search:
+  api_type: "ddg"  # 可选: serpapi / serper / google / ddg / custom / bing
+  api_key: ""      # ddg 无需 key，若用 serper/serpapi 请在这里填
+  timeout: 120
+
+dr_search:
+  compact_method: ""  # summarization, chunk_filtering
+  search_type: "tavily_only"
+  search_config_path: "/home/jason/.metagpt/search_config.yaml"
+  api_config_path: "/home/jason/.metagpt/api_config.yaml"
+  max_chars_per_page: 8000
+dr_leader:
+  do_insert_image: false
+  do_search_plan_revise: false
+  max_ds_depth: 1
+  max_dr_react_loop: 5
+  max_ic_react_loop: 6
+dr_analyzer:
+  audio_api_key: ""
+  audio_api_base_url: ""
+
+image_search:
+  api_type: "serper"
+  api_key: "cb589ad4493a866aa6f129fa0a81ca21a29b2e2b"

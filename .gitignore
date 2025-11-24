@@ -1,0 +1,10 @@
+backend/venv/
+backend/venv310/
+frontend/node_modules/
+logs/
+data/trending/
+data/processed/
+__pycache__/
+*.pyc
+.DS_Store
+.env

@@ -1,0 +1,142 @@
+# Search Configuration for Multiple API Combinations
+# Defines different search modes with their API combinations and parameters
+
+# Default mode to use if not specified via command line
+default_mode: "baseline"
+
+# Define different search modes
+modes:
+  tavily_exa:
+    description: "Multi-API search with WRRF fusion (Tavily + Exa)"
+    apis:
+      tavily:
+        enabled: true
+        max_results: 10
+        include_raw_content: true
+        search_depth: "advanced"
+      exa:
+        enabled: true
+        numResults: 10
+        type: "auto"
+        contents:
+          text: true
+    fusion:
+      merge_strategy: "wrrf"
+      dedupe: true
+      max_results: 15
+      top_k: 10
+      wrrf_weights: [1.0, 1.0]  # Weights for Tavily, Exa, You.com
+      wrrf_k: 60
+  
+  tavily_only:
+    description: "search using only Tavily API"
+    apis:
+      tavily:
+        enabled: true
+        max_results: 10
+        include_raw_content: true
+        search_depth: "advanced"
+    # Result merging strategy
+    fusion:
+      merge_strategy: "round_robin"  # Single provider, no actual merging needed
+      dedupe: false
+      max_results: 10
+      top_k: 10
+
+  exa_only:
+    description: "Single Exa.ai search with markdown content scraping"
+    apis:
+      exa:
+        enabled: true
+        numResults: 10
+        type: "auto"
+        contents:
+          text: true
+    fusion:
+      merge_strategy: "round_robin"
+      dedupe: false
+      max_results: 10
+      top_k: 10
+
+  youcom_only:
+    description: "Single youcom search with markdown content scraping"
+    apis:
+      youcom:
+        enabled: true
+        livecrawl: "all"
+        livecrawl_formats: "markdown"
+        count: 10
+    fusion:
+      merge_strategy: "round_robin"
+      dedupe: false
+      max_results: 10
+      top_k: 10
+
+  firecrawl_only:
+    description: "Single Firecrawl search with markdown content scraping"
+    apis:
+      firecrawl:
+        enabled: true
+        limit: 10
+        sources: ["web"]
+        scrapeOptions:
+          formats: ["markdown"]
+
+    fusion:
+      merge_strategy: "round_robin"
+      dedupe: false
+      max_results: 10
+      top_k: 10
+
+  serper_only:
+    description: "Serper search enriched with Firecrawl batch scraping"
+    apis:
+      serper:
+        enabled: true
+
+    fusion:
+      merge_strategy: "round_robin"
+      dedupe: false
+      max_results: 10
+      top_k: 10
+
+
+  brave_only:
+    description: "Single Brave search with page content enabled"
+    apis:
+      brave:
+        enabled: true
+        count: 10
+        safesearch: "moderate"
+    fusion:
+      merge_strategy: "round_robin"
+      dedupe: false
+      max_results: 10
+      top_k: 10
+
+# Global search settings (applied to all modes)
+global:
+  # Content processing
+  max_content_chars: 250000  # Truncate content to this length per result
+  use_content_fallback: true  # Fallback to snippet if content is None
+  snippet_fallback_chars: 1000
+
+  # Retry settings
+  retry:
+    max_attempts: 3
+    backoff_factor: 2  # Exponential backoff: 1s, 2s, 4s
+    retry_on_timeout: true
+
+  # API configuration source
+  api_config_file: "/home/jason/.metagpt/api_config.yaml"  # Where to load API keys/endpoints
+
+  # Output settings
+  output_format: "json"  # json or jsonl
+  save_metadata: true  # Include timestamp, mode, query stats
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: null  # null = no file logging, or specify path
+  console: true

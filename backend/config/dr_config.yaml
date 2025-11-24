@@ -1,0 +1,3 @@
+# DR 生成相关配置
+batch_size: 3  # 单批并发量
+max_articles_per_run: 10

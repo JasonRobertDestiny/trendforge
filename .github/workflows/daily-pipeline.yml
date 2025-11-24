@@ -1,0 +1,72 @@
+name: TrendForge Daily Pipeline
+
+on:
+  schedule:
+    - cron: '0 22 * * *' # 北京时间 6:00
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.10'
+  NODE_VERSION: '18'
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache Python deps
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install git+ssh://git@gitlab.deepwisdomai.com/pub/MetaGPT.git@dr4run
+
+    - name: Configure API keys
+      run: |
+        cd backend
+        cat > config/api_config.yaml << EOF
+        newsapi_key: "${{ secrets.NEWS_API_KEY }}"
+        reddit_user_agent: "trendforge-gh-actions"
+        EOF
+        mkdir -p ~/.metagpt
+        echo "${{ secrets.METAGPT_CONFIG }}" > ~/.metagpt/config2.yaml
+
+    - name: Run content generation
+      run: |
+        cd backend
+        python pipeline.py full
+
+    - name: Commit and push changes
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        git config --global user.name 'TrendForge Bot'
+        git config --global user.email 'bot@trendforge.com'
+        git add content/ data/
+        if git diff --staged --quiet; then
+          echo "No new content to commit"
+        else
+          ARTICLES_TODAY=$(ls -1 content/blog/*$(date +%Y-%m-%d)*.md 2>/dev/null | wc -l)
+          git commit -m "feat: daily content - $(date +%Y-%m-%d) - ${ARTICLES_TODAY} articles"
+          git push
+        fi
+
+    - name: Trigger Vercel deployment
+      if: success()
+      run: echo "Vercel will auto-deploy on push to main"

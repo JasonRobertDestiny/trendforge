@@ -1,0 +1,10 @@
+requests==2.31.0
+beautifulsoup4==4.12.3
+pyyaml==6.0.1
+gitpython==3.1.40
+schedule==1.2.0
+python-dotenv==1.0.0
+aiohttp==3.8.6
+# asyncio is built-in in Python 3.7+, no need to install
+# metagpt needs to be installed from GitLab:
+# pip install git+ssh://git@gitlab.deepwisdomai.com/pub/MetaGPT.git@dr4run

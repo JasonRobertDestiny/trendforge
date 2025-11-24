@@ -1,0 +1,161 @@
+# TrendForge Automated Pipeline
+# 每日定时生成内容并触发前端部署
+
+stages:
+  - setup
+  - generate
+  - deploy
+  - notify
+
+variables:
+  PYTHON_VERSION: "3.10"
+  TZ: "Asia/Shanghai"
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 1
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - backend/venv/
+    - frontend/node_modules/
+    - .cache/pip
+
+# 准备 Python 运行环境
+setup:python:
+  stage: setup
+  image: python:${PYTHON_VERSION}
+  script:
+    - echo "Setting up Python environment..."
+    - cd backend
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+    - pip install git+ssh://git@gitlab.deepwisdomai.com/pub/MetaGPT.git@dr4run
+  artifacts:
+    paths:
+      - backend/venv/
+    expire_in: 1 week
+  only:
+    - schedules
+    - main
+
+# 每日内容生成
+generate:content:
+  stage: generate
+  image: python:${PYTHON_VERSION}
+  dependencies:
+    - setup:python
+  before_script:
+    - cd backend
+    - source venv/bin/activate
+    - |
+      cat > config/api_config.yaml << EOF
+      newsapi_key: "${NEWS_API_KEY}"
+      reddit_user_agent: "trendforge-ci"
+      EOF
+    - mkdir -p ~/.metagpt
+    - echo "${METAGPT_CONFIG}" > ~/.metagpt/config2.yaml
+  script:
+    - echo "Starting daily content generation at $(date)"
+    - python pipeline.py full
+    - |
+      if [ -n "$(git status --porcelain content/ data/)" ]; then
+        echo "New content generated"
+      else
+        echo "No new content today"
+        exit 0
+      fi
+    - git config user.email "trendforge-bot@example.com"
+    - git config user.name "TrendForge Bot"
+    - git add content/ data/
+    - |
+      COMMIT_MSG="feat: daily content generation - $(date +%Y-%m-%d)"
+      git commit -m "${COMMIT_MSG}"
+    - git push https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:main
+  artifacts:
+    paths:
+      - content/blog/
+      - data/processed/
+    expire_in: 7 days
+  only:
+    - schedules
+    - main
+
+# 前端构建（如未使用 Vercel 可手动触发）
+build:frontend:
+  stage: deploy
+  image: node:18
+  dependencies:
+    - generate:content
+  script:
+    - cd frontend
+    - npm ci
+    - npm run build
+    - echo "Frontend built successfully"
+  artifacts:
+    paths:
+      - frontend/out/
+    expire_in: 1 week
+  only:
+    - schedules
+    - main
+  when: manual
+
+# GitLab Pages 备用发布
+pages:
+  stage: deploy
+  dependencies:
+    - build:frontend
+  script:
+    - mkdir -p public
+    - cp -r frontend/out/* public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
+  when: manual
+
+# 成功通知
+notify:success:
+  stage: notify
+  image: alpine:latest
+  dependencies:
+    - generate:content
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - ARTICLES_TODAY=$(ls -1 content/blog/*$(date +%Y-%m-%d)*.md 2>/dev/null | wc -l || echo "0")
+    - ARTICLES_TOTAL=$(ls -1 content/blog/*.md 2>/dev/null | wc -l || echo "0")
+    - |
+      if [ -n "${NOTIFICATION_WEBHOOK}" ]; then
+        curl -X POST ${NOTIFICATION_WEBHOOK} \
+          -H "Content-Type: application/json" \
+          -d "{\"text\":\"TrendForge Daily Report\",\"articles_generated\":${ARTICLES_TODAY},\"total_articles\":${ARTICLES_TOTAL},\"date\":\"$(date +%Y-%m-%d)\",\"status\":\"success\"}"
+      fi
+    - echo "Daily generation complete. Generated ${ARTICLES_TODAY} articles." > report.txt
+    - echo "View at: https://trendforge.example.com" >> report.txt
+  artifacts:
+    reports:
+      dotenv: report.txt
+  only:
+    - schedules
+  when: on_success
+
+# 失败通知
+notify:failure:
+  stage: notify
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      if [ -n "${NOTIFICATION_WEBHOOK}" ]; then
+        curl -X POST ${NOTIFICATION_WEBHOOK} \
+          -H "Content-Type: application/json" \
+          -d "{\"text\":\"⚠️ TrendForge Pipeline Failed\",\"date\":\"$(date +%Y-%m-%d)\",\"job\":\"${CI_JOB_NAME}\",\"status\":\"failed\"}"
+      fi
+  only:
+    - schedules
+  when: on_failure
